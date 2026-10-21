@@ -2,13 +2,13 @@ This project focuses on building a secure, end-to-end authentication system usin
 
 Core User Flows
 
-Registration & Login: Dual-method support utilizing either Email/Password + OTP or Phone Number/Password + OTP.
+Registration & Login: Dual-method support utilizing either Email/Password with an email confirmation link (the user signs in after confirming) or Phone Number/Password with a temporary stub OTP step (fixed code, no SMS) until a real SMS provider is added.
 
 Credential Management: Complete "Forgot Password" recovery flow and a post-login "Reset Password" feature.
 
 Technical Stack & Implementation
 
-Backend: Supabase (handling auth state, OTP generation, and user management).
+Backend: Supabase (handling auth state and user management; email confirmation links; no SMS OTP for now).
 
 Architecture: Clean Architecture (separating data, domain, and presentation layers).
 

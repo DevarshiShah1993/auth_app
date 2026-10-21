@@ -4,11 +4,11 @@
 Build the authentication module of a Flutter app using Supabase Auth.
 
 Flows in scope:
-1. Sign up: email + password, then email OTP verification
-2. Sign up / sign in: phone number + OTP (SMS)
+1. Sign up: email + password, then email confirmation link (no email OTP; the user can sign in only after tapping the link)
+2. Sign up: phone number + password, then stub OTP step (no SMS; see "Phone OTP stub")
 3. Sign in: email + password
-4. Sign in: phone number + password, then OTP (2-step)
-5. Forgot password: request OTP by email or phone, verify, set new password
+4. Sign in: phone number + password, then stub OTP step (2-step)
+5. Forgot password: request a reset link by email, set new password (phone reset deferred until a real SMS provider exists)
 6. Change password while logged in (Settings), asks for current password first
 7. Session handling: auto-login on launch, logout, auth-guarded routes
 
@@ -70,26 +70,32 @@ test/                             # mirrors lib/
 
 ### Routing rules
 - Routes are constants in `core/router/routes.dart`; navigate with `context.go` / `context.push` by name.
-- The redirect function decides based on `AuthSessionBloc` state: unauthenticated users only reach `/sign-in`, `/sign-up`, `/otp`, `/forgot-password`, `/reset-password`; authenticated users are redirected away from them.
+- The redirect function decides based on `AuthSessionBloc` state: unauthenticated users only reach `/sign-in`, `/sign-up`, `/check-email`, `/otp` (phone only), `/forgot-password`, `/reset-password`; authenticated users are redirected away from them.
 
 ## Supabase auth mapping (reference for Developer)
 | Flow | Supabase call |
 |---|---|
-| Email sign up | `auth.signUp(email, password)` then `auth.verifyOTP(type: OtpType.signup, email, token)` |
+| Email sign up | `auth.signUp(email, password, emailRedirectTo: <app deep link>)`; Supabase emails a confirmation link. No `verifyOTP`. Until confirmed, `signInWithPassword` fails with `email_not_confirmed` (map to a "please confirm your email" Failure) |
 | Email sign in | `auth.signInWithPassword(email, password)` |
-| Phone sign in/up (OTP) | `auth.signInWithOtp(phone)` then `auth.verifyOTP(type: OtpType.sms, phone, token)` |
-| Phone + password + OTP | `auth.signInWithPassword(phone, password)` for step 1, then the OTP step as above |
-| Forgot password | `auth.resetPasswordForEmail(email)` or phone OTP, then `verifyOTP(type: OtpType.recovery)`, then `auth.updateUser(UserAttributes(password: new))` |
+| Phone sign up | `auth.signUp(phone, password)` (phone confirmation must be disabled in Supabase, so no SMS is sent), then the stub OTP step |
+| Phone sign in | `auth.signInWithPassword(phone, password)`, then the stub OTP step |
+| Forgot password | email: `auth.resetPasswordForEmail(email, redirectTo: <app deep link>)`, the link opens the app with a recovery session; phone reset is deferred; then `auth.updateUser(UserAttributes(password: new))` |
 | Change password (logged in) | re-verify with `signInWithPassword(currentPassword)` then `auth.updateUser(...)` |
 | Logout | `auth.signOut()` |
 
-Prerequisites (manual, not for agents): enable Email and Phone providers in the Supabase dashboard, configure an SMS provider (e.g. Twilio) for phone OTP, set the email OTP template to include `{{ .Token }}`. Never commit keys.
+Prerequisites (manual, not for agents): enable Email and Phone providers in the Supabase dashboard and turn OFF "Confirm phone" (no SMS provider is used), add the app deep link (e.g. `io.supabase.authapp://login-callback/`) to Authentication → URL Configuration → Redirect URLs, and keep the default "Confirm signup" email template (it contains the link). Email OTP/`{{ .Token }}` is not used. Never commit keys.
 
 ## Security rules
 - Supabase URL and anon key come from `--dart-define` or a git-ignored `.env`. Never hardcode, never commit service-role keys.
 - Never log passwords, OTPs, or tokens.
 - Validate input on the client (email format, password min 8 chars with letter and number, phone in E.164) but treat server errors as the source of truth.
-- OTP screens: 6 digits, resend timer (60 s), max attempts message from server errors.
+- Phone OTP screens: 6 digits, resend timer (60 s), max attempts message after 5 wrong tries (client-side while stubbed).
+
+## Phone OTP stub (temporary, dev only)
+- No SMS/OTP is sent by the backend. The OTP step is checked on the client by an `OtpVerifier` abstraction (domain) with a `FixedOtpVerifier` (data) where **`111111` is the only valid code; anything else is wrong**.
+- The stub is NOT security. It only gates the UI step, so the password sign-in already created a session. Treat phone accounts as password-protected only.
+- Register `FixedOtpVerifier` in `get_it` only when a build flag (e.g. `--dart-define=USE_STUB_OTP=true`) is set; release builds must not ship it. Swapping to a real provider later must need no changes outside data/DI.
+- The code `111111` is a documented dev constant, not a secret, but must not be logged with user data.
 
 ## UI and animation guidelines
 - Material 3, one `ThemeData` in `core/theme`, light and dark. No hardcoded colors or text styles in pages.
