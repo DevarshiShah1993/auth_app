@@ -1,10 +1,8 @@
-# Fonts (pending)
+# Fonts
 
-Place the bundled font files here (Owner decision Q-1, SIL OFL):
+Declared in pubspec.yaml (SIL OFL, licence in `licenses/OFL.txt`):
 
-- Inter: Inter-Regular.ttf (400), Inter-Medium.ttf (500), Inter-SemiBold.ttf (600)
-- JetBrains Mono: JetBrainsMono-Regular.ttf (400), JetBrainsMono-Medium.ttf (500)
-- Licence files in `licenses/`
+- Inter (static, 24pt optical size): Regular 400, Medium 500, SemiBold 600
+- JetBrains Mono: Regular 400, Medium 500
 
-Then declare them under `flutter: fonts:` in pubspec.yaml (not declared yet,
-because a missing font file breaks the build).
+All other weights, italics and the Inter 18pt/28pt cuts are unused and can be deleted.
