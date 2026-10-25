@@ -1,6 +1,7 @@
 import 'package:auth_app/app.dart';
 import 'package:auth_app/core/di/injection.dart';
 import 'package:auth_app/core/utils/env_config.dart';
+import 'package:auth_app/features/auth/presentation/bloc/auth_session_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -12,5 +13,6 @@ Future<void> main() async {
     publishableKey: config.supabaseKey,
   );
   configureDependencies();
-  runApp(const App());
+  final sessionBloc = sl<AuthSessionBloc>()..add(const AuthSessionStarted());
+  runApp(App(sessionBloc: sessionBloc));
 }
