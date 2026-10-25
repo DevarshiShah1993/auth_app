@@ -3,6 +3,7 @@ import 'package:auth_app/core/router/auth_redirect.dart';
 import 'package:auth_app/core/router/routes.dart';
 import 'package:auth_app/features/auth/presentation/bloc/auth_session_bloc.dart';
 import 'package:auth_app/features/auth/presentation/bloc/check_email_bloc.dart';
+import 'package:auth_app/features/auth/presentation/bloc/sign_in_bloc.dart';
 import 'package:auth_app/features/auth/presentation/bloc/sign_up_bloc.dart';
 import 'package:auth_app/features/auth/presentation/pages/check_email_page.dart';
 import 'package:auth_app/features/auth/presentation/pages/home_page.dart';
@@ -54,7 +55,15 @@ GoRouter createRouter({
       GoRoute(
         name: Routes.signIn,
         path: Routes.signInPath,
-        builder: (context, state) => const SignInPage(),
+        // An address may arrive as a `String` in `extra` (Sign Up's
+        // already-registered banner); it prefills the email field.
+        builder: (context, state) {
+          final extra = state.extra;
+          return BlocProvider<SignInBloc>(
+            create: (_) => sl<SignInBloc>(),
+            child: SignInPage(initialEmail: extra is String ? extra : null),
+          );
+        },
       ),
       GoRoute(
         name: Routes.signUp,
