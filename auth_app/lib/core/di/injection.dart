@@ -9,6 +9,7 @@ import 'package:auth_app/features/auth/domain/usecases/resend_confirmation.dart'
 import 'package:auth_app/features/auth/domain/usecases/sign_in_with_password.dart';
 import 'package:auth_app/features/auth/domain/usecases/sign_out.dart';
 import 'package:auth_app/features/auth/domain/usecases/sign_up.dart';
+import 'package:auth_app/features/auth/presentation/bloc/auth_session_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -18,7 +19,8 @@ final GetIt sl = GetIt.instance;
 /// Registers dependencies. Call after `Supabase.initialize`.
 ///
 /// Repositories and data sources use `registerLazySingleton` against their
-/// abstract type; Blocs use `registerFactory` (added in later tasks).
+/// abstract type; Blocs use `registerFactory`. The app creates the one
+/// `AuthSessionBloc` for its lifetime in `main.dart`.
 void configureDependencies() {
   if (!sl.isRegistered<SupabaseClient>()) {
     sl.registerLazySingleton<SupabaseClient>(() => Supabase.instance.client);
@@ -37,7 +39,13 @@ void configureDependencies() {
     ..registerLazySingleton(() => SignOut(sl<AuthRepository>()))
     ..registerLazySingleton(() => GetCurrentUser(sl<AuthRepository>()))
     ..registerLazySingleton(() => ObserveAuthState(sl<AuthRepository>()))
-    ..registerLazySingleton(
-      () => ObserveEmailLinkResults(sl<AuthRepository>()),
+    ..registerLazySingleton(() => ObserveEmailLinkResults(sl<AuthRepository>()))
+    ..registerFactory(
+      () => AuthSessionBloc(
+        getCurrentUser: sl<GetCurrentUser>(),
+        observeAuthState: sl<ObserveAuthState>(),
+        observeEmailLinkResults: sl<ObserveEmailLinkResults>(),
+        signOut: sl<SignOut>(),
+      ),
     );
 }
