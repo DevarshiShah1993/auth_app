@@ -11,6 +11,7 @@ import 'package:auth_app/features/auth/domain/usecases/sign_out.dart';
 import 'package:auth_app/features/auth/domain/usecases/sign_up.dart';
 import 'package:auth_app/features/auth/presentation/bloc/auth_session_bloc.dart';
 import 'package:auth_app/features/auth/presentation/bloc/check_email_bloc.dart';
+import 'package:auth_app/features/auth/presentation/bloc/sign_in_bloc.dart';
 import 'package:auth_app/features/auth/presentation/bloc/sign_up_bloc.dart';
 import 'package:auth_app/features/auth/presentation/services/resend_cooldown_store.dart';
 import 'package:get_it/get_it.dart';
@@ -44,6 +45,7 @@ void configureDependencies() {
     ..registerLazySingleton(() => ObserveAuthState(sl<AuthRepository>()))
     ..registerLazySingleton(() => ObserveEmailLinkResults(sl<AuthRepository>()))
     ..registerLazySingleton(() => ResendCooldownStore())
+    ..registerFactory(() => SignInBloc(signIn: sl<SignInWithPassword>()))
     ..registerFactory(
       () => SignUpBloc(
         signUp: sl<SignUp>(),
