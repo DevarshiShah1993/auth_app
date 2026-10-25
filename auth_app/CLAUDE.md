@@ -86,7 +86,7 @@ test/                             # mirrors lib/
 Prerequisites (manual, not for agents): enable Email and Phone providers in the Supabase dashboard and turn OFF "Confirm phone" (no SMS provider is used), add the app deep link (e.g. `io.supabase.authapp://login-callback/`) to Authentication → URL Configuration → Redirect URLs, and keep the default "Confirm signup" email template (it contains the link). Email OTP/`{{ .Token }}` is not used. Never commit keys.
 
 ## Security rules
-- Supabase URL and anon key come from `--dart-define` or a git-ignored `.env`. Never hardcode, never commit service-role keys.
+- Supabase config comes from a git-ignored `.env` file with exactly two keys: `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Use the new **publishable key only**; the legacy `anon` key must not be used (Supabase is retiring it). Never hardcode keys, never commit `.env` (commit a `.env.example` with empty values), never use or commit a secret / service-role key. `--dart-define` remains only for build flags such as `USE_STUB_OTP`.
 - Never log passwords, OTPs, or tokens.
 - Validate input on the client (email format, password min 8 chars with letter and number, phone in E.164) but treat server errors as the source of truth.
 - Phone OTP screens: 6 digits, resend timer (60 s), max attempts message after 5 wrong tries (client-side while stubbed).
