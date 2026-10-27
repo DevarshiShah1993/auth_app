@@ -1,4 +1,6 @@
 import 'package:auth_app/core/error/failure.dart';
+import 'package:auth_app/core/error/email_not_confirmed_failure.dart';
+import 'package:auth_app/core/error/invalid_credentials_failure.dart';
 import 'package:auth_app/core/error/invalid_link_failure.dart';
 import 'package:auth_app/core/error/network_failure.dart';
 import 'package:auth_app/core/error/rate_limit_failure.dart';
@@ -9,6 +11,13 @@ import 'package:auth_app/core/error/weak_password_failure.dart';
 /// Maps a [Failure] to the final user-facing copy (requirements section 6).
 /// Raw failure messages are never shown.
 abstract final class FailureMessages {
+  /// Shown for a wrong email or password (does not say which).
+  static const String invalidCredentials = 'Incorrect email or password';
+
+  /// Shown when signing in before the email link was tapped.
+  static const String emailNotConfirmed =
+      'Please confirm your email before signing in';
+
   /// Shown when the email is already registered.
   static const String emailExists =
       'An account with this email already exists. Try signing in.';
@@ -35,11 +44,16 @@ abstract final class FailureMessages {
   /// Fallback for anything else.
   static const String generic = 'Something went wrong. Please try again.';
 
+  /// Success banner on Sign In after the confirmation link was opened.
+  static const String emailConfirmed = 'Email confirmed. You can now sign in.';
+
   /// Confirmation shown after a successful resend.
   static const String resendSuccess = 'Confirmation email sent';
 
   /// Returns the copy for [failure].
   static String of(Failure failure) => switch (failure) {
+    InvalidCredentialsFailure() => invalidCredentials,
+    EmailNotConfirmedFailure() => emailNotConfirmed,
     UserAlreadyExistsFailure() => emailExists,
     WeakPasswordFailure() => weakPassword,
     RateLimitFailure() => rateLimit,

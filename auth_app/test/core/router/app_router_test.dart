@@ -5,6 +5,8 @@ import 'package:auth_app/core/router/stream_refresh_listenable.dart';
 import 'package:auth_app/core/theme/app_theme.dart';
 import 'package:auth_app/features/auth/domain/entities/app_user.dart';
 import 'package:auth_app/features/auth/domain/usecases/resend_confirmation.dart';
+import 'package:auth_app/features/auth/domain/usecases/sign_in_with_password.dart';
+import 'package:auth_app/features/auth/presentation/bloc/sign_in_bloc.dart';
 import 'package:auth_app/features/auth/presentation/bloc/auth_session_bloc.dart';
 import 'package:auth_app/features/auth/presentation/bloc/check_email_bloc.dart';
 import 'package:auth_app/features/auth/presentation/services/resend_cooldown_store.dart';
@@ -23,6 +25,8 @@ class MockSessionBloc extends MockBloc<AuthSessionEvent, AuthSessionState>
     implements AuthSessionBloc {}
 
 class MockResendConfirmation extends Mock implements ResendConfirmation {}
+
+class MockSignInWithPassword extends Mock implements SignInWithPassword {}
 
 void main() {
   const user = AppUser(id: '1', email: 'a@b.co', emailConfirmed: true);
@@ -49,6 +53,9 @@ void main() {
 
   setUp(() {
     bloc = MockSessionBloc();
+    sl.registerFactory<SignInBloc>(
+      () => SignInBloc(signIn: MockSignInWithPassword()),
+    );
     sl.registerFactory<CheckEmailBloc>(
       () => CheckEmailBloc(
         resendConfirmation: MockResendConfirmation(),
