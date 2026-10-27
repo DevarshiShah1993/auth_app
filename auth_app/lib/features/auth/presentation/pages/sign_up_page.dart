@@ -9,6 +9,7 @@ import 'package:auth_app/core/widgets/inline_banner.dart';
 import 'package:auth_app/core/widgets/password_field.dart';
 import 'package:auth_app/core/widgets/primary_button.dart';
 import 'package:auth_app/core/error/user_already_exists_failure.dart';
+import 'package:auth_app/core/error/weak_password_failure.dart';
 import 'package:auth_app/features/auth/presentation/bloc/sign_up_bloc.dart';
 import 'package:auth_app/features/auth/presentation/utils/failure_messages.dart';
 import 'package:auth_app/features/auth/presentation/widgets/shaking.dart';
@@ -193,6 +194,7 @@ class _SignUpPageState extends State<SignUpPage> {
                               'At least 8 characters, with a letter and a '
                               'number',
                           enabled: !loading,
+                          showErrorBorder: failure is WeakPasswordFailure,
                           validator: Validators.newPassword,
                           onChanged: (_) {
                             _dismissFailure();

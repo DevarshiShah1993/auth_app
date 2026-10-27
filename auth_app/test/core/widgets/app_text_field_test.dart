@@ -90,4 +90,36 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Hint text'), findsNothing);
   });
+
+  testWidgets('showErrorBorder shows the error border without error text', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      themedHost(
+        const AppTextField(
+          label: 'Password',
+          helperText: 'Hint text',
+          showErrorBorder: true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final context = tester.element(find.byType(TextField));
+    final theme = Theme.of(context).inputDecorationTheme;
+    final decoration = tester
+        .widget<TextField>(find.byType(TextField))
+        .decoration!;
+    expect(decoration.enabledBorder, theme.errorBorder);
+    expect(decoration.focusedBorder, theme.focusedErrorBorder);
+    expect(find.byIcon(Icons.error_outline), findsNothing);
+    expect(find.text('Hint text'), findsOneWidget);
+  });
+
+  testWidgets('default state keeps the normal border', (tester) async {
+    await tester.pumpWidget(themedHost(const AppTextField(label: 'Email')));
+    final decoration = tester
+        .widget<TextField>(find.byType(TextField))
+        .decoration!;
+    expect(decoration.enabledBorder, isNull);
+  });
 }
