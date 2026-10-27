@@ -10,6 +10,9 @@ import 'package:auth_app/features/auth/domain/usecases/sign_in_with_password.dar
 import 'package:auth_app/features/auth/domain/usecases/sign_out.dart';
 import 'package:auth_app/features/auth/domain/usecases/sign_up.dart';
 import 'package:auth_app/features/auth/presentation/bloc/auth_session_bloc.dart';
+import 'package:auth_app/features/auth/presentation/bloc/check_email_bloc.dart';
+import 'package:auth_app/features/auth/presentation/bloc/sign_up_bloc.dart';
+import 'package:auth_app/features/auth/presentation/services/resend_cooldown_store.dart';
 import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -40,6 +43,19 @@ void configureDependencies() {
     ..registerLazySingleton(() => GetCurrentUser(sl<AuthRepository>()))
     ..registerLazySingleton(() => ObserveAuthState(sl<AuthRepository>()))
     ..registerLazySingleton(() => ObserveEmailLinkResults(sl<AuthRepository>()))
+    ..registerLazySingleton(() => ResendCooldownStore())
+    ..registerFactory(
+      () => SignUpBloc(
+        signUp: sl<SignUp>(),
+        cooldownStore: sl<ResendCooldownStore>(),
+      ),
+    )
+    ..registerFactory(
+      () => CheckEmailBloc(
+        resendConfirmation: sl<ResendConfirmation>(),
+        cooldownStore: sl<ResendCooldownStore>(),
+      ),
+    )
     ..registerFactory(
       () => AuthSessionBloc(
         getCurrentUser: sl<GetCurrentUser>(),

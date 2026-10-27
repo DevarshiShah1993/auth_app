@@ -1,9 +1,13 @@
+import 'package:auth_app/core/di/injection.dart';
 import 'package:auth_app/core/router/app_router.dart';
 import 'package:auth_app/core/router/routes.dart';
 import 'package:auth_app/core/router/stream_refresh_listenable.dart';
 import 'package:auth_app/core/theme/app_theme.dart';
 import 'package:auth_app/features/auth/domain/entities/app_user.dart';
+import 'package:auth_app/features/auth/domain/usecases/resend_confirmation.dart';
 import 'package:auth_app/features/auth/presentation/bloc/auth_session_bloc.dart';
+import 'package:auth_app/features/auth/presentation/bloc/check_email_bloc.dart';
+import 'package:auth_app/features/auth/presentation/services/resend_cooldown_store.dart';
 import 'package:auth_app/features/auth/presentation/pages/check_email_page.dart';
 import 'package:auth_app/features/auth/presentation/pages/home_page.dart';
 import 'package:auth_app/features/auth/presentation/pages/sign_in_page.dart';
@@ -13,9 +17,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
 
 class MockSessionBloc extends MockBloc<AuthSessionEvent, AuthSessionState>
     implements AuthSessionBloc {}
+
+class MockResendConfirmation extends Mock implements ResendConfirmation {}
 
 void main() {
   const user = AppUser(id: '1', email: 'a@b.co', emailConfirmed: true);
@@ -40,9 +47,18 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
   }
 
-  setUp(() => bloc = MockSessionBloc());
+  setUp(() {
+    bloc = MockSessionBloc();
+    sl.registerFactory<CheckEmailBloc>(
+      () => CheckEmailBloc(
+        resendConfirmation: MockResendConfirmation(),
+        cooldownStore: ResendCooldownStore(),
+      ),
+    );
+  });
 
-  tearDown(() {
+  tearDown(() async {
+    await sl.reset();
     router.dispose();
     refresh.dispose();
   });
