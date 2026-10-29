@@ -10,6 +10,7 @@ import 'package:auth_app/features/auth/domain/usecases/sign_up.dart';
 import 'package:auth_app/features/auth/presentation/bloc/sign_up_bloc.dart';
 import 'package:auth_app/features/auth/presentation/pages/sign_up_page.dart';
 import 'package:auth_app/features/auth/presentation/services/resend_cooldown_store.dart';
+import 'package:auth_app/core/widgets/app_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -247,6 +248,32 @@ void main() {
     expect(
       find.text('No connection. Check your internet and try again.'),
       findsOneWidget,
+    );
+  });
+
+  testWidgets('weak password failure marks only the password field border', (
+    tester,
+  ) async {
+    when(() => signUp(any()))
+        .thenAnswer((_) async => left(const WeakPasswordFailure()));
+    await pump(tester);
+    await fillValid(tester);
+    await tapSignUp(tester);
+    await tester.pumpAndSettle();
+    final fields = tester
+        .widgetList<AppTextField>(find.byType(AppTextField))
+        .toList();
+    expect(fields.map((f) => f.showErrorBorder), [false, true, false]);
+    // No duplicate error text under the field.
+    expect(find.textContaining('Password is too weak'), findsOneWidget);
+
+    await tester.enterText(field('Password'), 'another1Password');
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widgetList<AppTextField>(find.byType(AppTextField))
+          .any((f) => f.showErrorBorder),
+      isFalse,
     );
   });
 

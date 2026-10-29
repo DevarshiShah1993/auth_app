@@ -22,6 +22,7 @@ class AppTextField extends StatefulWidget {
     this.textInputAction,
     this.autofillHints,
     this.errorText,
+    this.showErrorBorder = false,
     this.validator,
     this.enabled = true,
     this.onChanged,
@@ -55,6 +56,11 @@ class AppTextField extends StatefulWidget {
 
   /// Externally controlled error; wins over the validator error.
   final String? errorText;
+
+  /// Shows the error border without any error text. Use when the message
+  /// is already shown elsewhere (e.g. a banner) so it is not duplicated;
+  /// the caller must keep that message visible (not colour-only).
+  final bool showErrorBorder;
 
   /// Returns an error message or null; run on blur and on `validate()`.
   final String? Function(String value)? validator;
@@ -178,6 +184,9 @@ class AppTextFieldState extends State<AppTextField>
           : scheme.onSurface.withValues(alpha: 0.38),
     );
 
+    final inputTheme = theme.inputDecorationTheme;
+    final borderOnly = widget.showErrorBorder && error == null;
+
     final field = TextField(
       controller: _controller,
       focusNode: _focusNode,
@@ -199,6 +208,8 @@ class AppTextFieldState extends State<AppTextField>
         fillColor: widget.enabled ? null : context.appColors.disabledFill,
         prefixIcon: widget.prefixIcon,
         suffixIcon: widget.suffix,
+        enabledBorder: borderOnly ? inputTheme.errorBorder : null,
+        focusedBorder: borderOnly ? inputTheme.focusedErrorBorder : null,
         error: error == null ? null : _FieldError(message: error),
       ),
     );

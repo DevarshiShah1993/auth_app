@@ -14,6 +14,7 @@ class PasswordField extends StatefulWidget {
     this.textInputAction,
     this.autofillHints = const [AutofillHints.password],
     this.errorText,
+    this.showErrorBorder = false,
     this.validator,
     this.enabled = true,
     this.onChanged,
@@ -38,6 +39,9 @@ class PasswordField extends StatefulWidget {
 
   /// Externally controlled error; wins over the validator error.
   final String? errorText;
+
+  /// Shows only the error border (message is shown elsewhere).
+  final bool showErrorBorder;
 
   /// Returns an error message or null; run on blur and on `validate()`.
   final String? Function(String value)? validator;
@@ -77,6 +81,7 @@ class PasswordFieldState extends State<PasswordField> {
       textInputAction: widget.textInputAction,
       autofillHints: widget.autofillHints,
       errorText: widget.errorText,
+      showErrorBorder: widget.showErrorBorder,
       validator: widget.validator,
       enabled: widget.enabled,
       onChanged: widget.onChanged,
