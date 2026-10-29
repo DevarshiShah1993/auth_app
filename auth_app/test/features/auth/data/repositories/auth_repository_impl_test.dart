@@ -306,5 +306,25 @@ void main() {
         expect(links, hasLength(1));
       },
     );
+
+    // BUG B-02: any stream error (e.g. offline token refresh) is reported as
+    // an email-link result, which later routes a signed-out user to the
+    // "Link expired" screen instead of Sign In.
+    test(
+      'a network error on the auth stream is not an email-link result',
+      () async {
+        final links = <Either<Failure, Unit>>[];
+        repo.emailLinkResults.listen(links.add);
+        await Future<void>.delayed(Duration.zero);
+
+        events.add(
+          AuthStateEventModel.error(AuthRetryableFetchException(message: 'm')),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        expect(links, isEmpty);
+      },
+      skip: 'B-02: network stream errors surface as invalid-link results',
+    );
   });
 }
