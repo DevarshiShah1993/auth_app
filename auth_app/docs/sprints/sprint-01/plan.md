@@ -18,14 +18,14 @@ Out of this sprint: phone auth, forgot password, change password (planned for la
 |---|---|---|---|---|
 | T-01 | Write requirements + acceptance criteria for email sign-up with confirmation link, email sign-in (blocked until confirmed), session handling, logout (`docs/requirements/`) | BA | Done | — |
 | T-02 | Design spec: theme tokens (light/dark), sign-in, sign-up, check-your-email, home screens, states and animations (`docs/design/`) | Designer | Done | T-01 (+ Owner gate 1) |
-| T-03 | Project foundation: add dependencies, folder structure, `.env` Supabase config (`PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_PUBLISHABLE_KEY`; add `.env` to `.gitignore`, commit `.env.example`), `get_it` setup, `main.dart`/`app.dart` | Developer | Rejected | T-02 (+ Owner gate 2) |
+| T-03 | Project foundation: add dependencies, folder structure, `.env` Supabase config (`PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_PUBLISHABLE_KEY`; add `.env` to `.gitignore`, commit `.env.example`), `get_it` setup, `main.dart`/`app.dart` | Developer | Done | T-02 (+ Owner gate 2) |
 | T-04 | Core theme + shared widgets: `ThemeData`, `AppTextField`, `PasswordField`, `PrimaryButton`, validators (`OtpInput` deferred to phone sprint) | Developer | Done | T-03 |
-| T-05 | Domain + data layer: `AppUser`, `AuthRepository`, `AuthRemoteDataSource`, `Failure` mapping, use cases (SignUp, SignInWithPassword, SignOut, ObserveAuthState) with unit tests | Developer | Rejected | T-03 |
+| T-05 | Domain + data layer: `AppUser`, `AuthRepository`, `AuthRemoteDataSource`, `Failure` mapping, use cases (SignUp, SignInWithPassword, SignOut, ObserveAuthState) with unit tests | Developer | Done | T-03 |
 | T-06 | `AuthSessionBloc` + go_router auth guard (`routes.dart`, redirect, `refreshListenable`), placeholder Home page with logout | Developer | Done | T-05 |
 | T-07 | Sign-up + check-your-email screens: `SignUpBloc`, resend-confirmation action (60 s cooldown), deep-link config for `emailRedirectTo`, pages, bloc tests | Developer | Done | T-04, T-05, T-06 |
 | T-08 | Sign-in screen: `SignInBloc` (email + password), "please confirm your email" error state, page, bloc tests | Developer | Done | T-04, T-05, T-06 |
 | T-10 | Follow-ups: `AppTextField` error-border-only state for server weak-password error; Android + iOS deep-link config for `io.supabase.authapp://login-callback/` so the confirmation link opens the app | Developer | Done | T-07, T-08 |
-| T-11 | Fix QA bugs: B-01 (empty values in `.env.example`) and B-02 (forward only invalid-link errors from auth stream); un-skip the QA tests tied to them | Developer | In Progress | T-09 |
+| T-11 | Fix QA bugs: B-01 (empty values in `.env.example`) and B-02 (forward only invalid-link errors from auth stream); un-skip the QA tests tied to them | Developer | Done | T-09 |
 | T-09 | QA: verify T-03–T-08 against acceptance criteria, run `flutter analyze` and `flutter test`, record verdicts and bugs (`bugs.md`) | QA | Done | T-07, T-08, T-10 |
 
 ## Risks

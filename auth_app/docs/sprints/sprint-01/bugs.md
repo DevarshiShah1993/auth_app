@@ -7,7 +7,7 @@ _Owner of this file: QA. Date: 2026-10-29. Branch `sprint-01/T-09` (from `sprint
 | Check | Result |
 |---|---|
 | `flutter analyze` | 0 issues |
-| `flutter test` | 266 passed, 2 skipped (skips are bug-linked: B-01, B-02), 0 failed |
+| `flutter test` | First run (T-09): 266 passed, 2 skipped (B-01, B-02). Re-verification on `sprint-01/T-11`: 272 passed, 0 skipped, 0 failed; `flutter analyze` 0 issues |
 | Tests before QA | 243 passed |
 | Tests added by QA | `test/qa/architecture_rules_test.dart` (layer, security, config, deep-link checks), `test/qa/router_qa_test.dart` (AC-12/17/23/24/26/27), `test/qa/check_email_layout_qa_test.dart` (AC-13c, AC-30), plus one skipped test in `test/features/auth/data/repositories/auth_repository_impl_test.dart` (B-02) |
 
@@ -19,39 +19,42 @@ Not run (no device/Supabase access from QA): any real Supabase call, email deliv
 |---|---|---|
 | T-01 Requirements | Done | Consistent with code. Doc nit: AC-12 says "see OQ-03 for auto-login alternative" but the auto-login question is OQ-01 (OQ-03 is confirm-password). BA to fix wording; no behaviour impact. |
 | T-02 Design | Done | Consistent with code. Known drift: sign-in failure shake plays on the banner, not the whole card (design says card `shake`); reported by Developer, accepted as minor. |
-| T-03 Foundation | **Rejected** | B-01: `.env.example` has real values (AC-32, CLAUDE.md security rule). One-line fix. |
+| T-03 Foundation | Done (re-verified on T-11) | B-01 fixed and verified. First verdict was Rejected. |
 | T-04 Theme + shared widgets | Done | Widget tests, tokens, error-border state verified. |
-| T-05 Domain + data | **Rejected** | B-02: any auth-stream error (e.g. offline token refresh) is reported as an email-link result, which makes the bloc/router show "Link expired" later. |
+| T-05 Domain + data | Done (re-verified on T-11) | B-02 fixed and verified. First verdict was Rejected. |
 | T-06 Session bloc + router | Done | Verified by tests. Note: the offline scenario in B-02 surfaces here; re-verify together with the T-05 fix. |
 | T-07 Sign-up + check-email | Done | Code and tests meet AC-01..AC-13f. End-to-end link delivery is MANUAL (see section 5). |
 | T-08 Sign-in | Done | AC-14..AC-20 verified by widget/bloc tests. Server behaviour is MANUAL. |
 | T-10 Follow-ups | Done (config) | Android/iOS config matches `AppConstants.authRedirectUrl` (test added). Delivery of the link to the app on a device is NOT verified; Owner is testing on Android. Reopen if that fails. |
 | T-09 QA | Done | Matrix and verdicts complete. |
+| T-11 Bug fixes | Done | B-01 and B-02 verified (section 3). |
 
 ## 3. Bugs
 
-### B-01 — `.env.example` is committed with real values
+### B-01 — `.env.example` is committed with real values — FIXED / VERIFIED (T-11, 2026-10-31)
+- Evidence: `.env.example` now contains exactly `PUBLIC_SUPABASE_URL=` and `PUBLIC_SUPABASE_PUBLISHABLE_KEY=`; `git ls-files` lists `.env.example` only (`.env` untracked, `git check-ignore .env` matches); grep of tracked files finds no `sb_publishable_` or project URL; the QA test is un-skipped and passes. Old values remain in git history (Owner accepted, no rotation).
 - Severity: Low (the URL and publishable key are public by design, not a secret), but it breaks an explicit rule.
 - Task: T-03. **Blocks Done: yes** (AC-32: "`.env.example` with empty values is committed"; CLAUDE.md security rules).
 - Steps: open `.env.example` (tracked since commit 7be3f1d).
 - Expected: `PUBLIC_SUPABASE_URL=` and `PUBLIC_SUPABASE_PUBLISHABLE_KEY=` with empty values.
 - Actual: both lines hold the real project URL and a real `sb_publishable_...` key.
 - Notes: values stay in git history after the fix; because it is a publishable key the Owner can decide whether rotating it is needed. `.env` itself is git-ignored and untracked (verified). `pubspec.yaml` lists `.env` as an asset, so the publishable values ship inside the app bundle (acceptable for a publishable key; see N-03).
-- Test: `test/qa/architecture_rules_test.dart` ".env.example has the two keys with empty values" (skipped, B-01). Un-skip after the fix.
+- Test: `test/qa/architecture_rules_test.dart` ".env.example has the two keys with empty values" (un-skipped, passing).
 
-### B-02 — Auth-stream errors are treated as "email link invalid"
+### B-02 — Auth-stream errors are treated as "email link invalid" — FIXED / VERIFIED (T-11, 2026-10-31)
+- Evidence: `AuthRepositoryImpl._process` now emits a link result for an error event only when `AuthFailureMapper` yields `InvalidLinkFailure`, otherwise returns null (ignored). Tests, all passing: my original repository test (unchanged assertion `links` is empty, now un-skipped), unknown error ignored, a network error does not block a later `otp_expired` result, and bloc-level tests with the real repository (offline refresh failure then logout ends signed out with `linkResult == null`; `otp_expired` still gives `invalid`). The OQ-01 tests (link signedIn signed out and reported as confirmed, password sign-in kept, failed sign-in does not whitelist) still pass. Real offline launch on a device remains MANUAL.
 - Severity: Medium.
 - Task: T-05 (root cause, `AuthRepositoryImpl._process`, `AuthEventType.error`), visible in T-06 (`AuthSessionBloc` maps every `Left` to `EmailLinkResult.invalid`). **Blocks Done: yes.**
 - Steps: signed-in user whose stored token needs refreshing launches the app offline (gotrue emits a network error on `onAuthStateChange`, documented in gotrue). The user later logs out.
 - Expected: logout goes to Sign In; network errors never produce a link result (AC-26, AC-13 applies only to link errors).
 - Actual: the error becomes `Left(NetworkFailure)` on `emailLinkResults`, the bloc stores `linkResult = invalid`, and when the user is unauthenticated the router sends them once to `/check-email` in the "Link expired" variant instead of Sign In.
 - Suggested fix (Developer): in the repository only forward errors that map to `InvalidLinkFailure` (and drop or log-free ignore the rest); optionally make the bloc ignore non-link failures.
-- Test: `auth_repository_impl_test.dart` "a network error on the auth stream is not an email-link result" (skipped, B-02); confirmed failing when un-skipped.
+- Test: `auth_repository_impl_test.dart` "a network error on the auth stream is not an email-link result" (un-skipped, passing).
 
 ## 4. Notes and risks (not bugs, no verdict impact)
 
 - N-01 One public class per file: `AppTextField`/`AppTextFieldState` and `PasswordField`/`PasswordFieldState` share a file (State classes are public so `GlobalKey<...State>` works). Minor deviation from the rule.
-- N-02 `ObserveAuthState` and `ObserveEmailLinkResults` return `Stream`, not `Future<Either<Failure,T>>`; documented in their doc comments. Deviation from the "use cases return Future<Either>" rule that the Owner should accept explicitly.
+- N-02 (Owner accepted this exception 2026-10-31) `ObserveAuthState` and `ObserveEmailLinkResults` return `Stream`, not `Future<Either<Failure,T>>`; documented in their doc comments. Deviation from the "use cases return Future<Either>" rule that the Owner should accept explicitly.
 - N-03 `.env` is bundled as a Flutter asset (needed by `flutter_dotenv`). Only publishable values belong in it.
 - N-04 OQ-02 / enumeration protection: for an already-confirmed email Supabase may return a fake success; the app then shows Check Your Email and no mail arrives. Accepted in the requirements note; MANUAL to observe.
 - N-05 OQ-01 side effect: a `signedIn` event not caused by the app's own password sign-in is signed out locally. A signed-in user who taps another account's confirmation link is therefore logged out. Very rare; acceptable but worth knowing.
@@ -68,7 +71,7 @@ Not run (no device/Supabase access from QA): any real Supabase call, email deliv
 3. Real Supabase: sign up, Check Your Email with 60 s countdown, resend (success and rate-limit), sign in before confirming (expect "Please confirm your email" + Resend), confirm, sign in, restart app (auto-login to Home), logout, restart (Sign In).
 4. Expired/used link: tap an old link, expect the "Link expired" variant with resend; try with the app closed (cold start) and open (N-07: no flash of Home).
 5. Already registered email (N-04) and weak password from the server.
-6. Offline: launch offline with a stored session, then log out (B-02 after the fix).
+6. Offline: launch offline with a stored session, then log out (confirm B-02 fix on a device).
 7. Visual review in light and dark on a small phone (360x640) with the keyboard open; confirm fonts load (Inter, JetBrains Mono) and animations stay under 400 ms. Automated tests only check for overflow/exceptions.
 8. Confirm Supabase dashboard settings: Email provider on, "Confirm email" on, redirect URL listed, default "Confirm signup" template.
 
@@ -114,7 +117,7 @@ Legend: test files are under `test/`. SU = `features/auth/presentation/pages/sig
 | AC-29 | page tests for loading/failure/success on SU, SI, CE, HP; `primary_button_test` | Pass |
 | AC-30 | overflow tests: SU (both themes), SI, CE expired, CL (normal variant light/dark, long address), `auth_scaffold_test`; dark render tests | Pass for overflow/exceptions; visual review MANUAL |
 | AC-31 | ARCH "no print/debugPrint/log"; INSP repository discards raw server messages (`AuthFailureMapper`); N-09 | Pass (crash/analytics: none present) |
-| AC-32 | `env_config_test`; ARCH ".env is git-ignored and not tracked"; ARCH ".env.example ... empty values" (skipped) | **Fail: B-01** |
+| AC-32 | `env_config_test`; ARCH ".env is git-ignored and not tracked"; ARCH ".env.example ... empty values" | Pass (B-01 fixed) |
 | AC-33 | ARCH "no service-role / secret / legacy anon key"; INSP `Supabase.initialize(publishableKey: ...)` | Pass |
 
 ## 7. Rule review (CLAUDE.md)
@@ -132,6 +135,6 @@ Legend: test files are under `test/`. SU = `features/auth/presentation/pages/sig
 | One public class per file | Minor deviation N-01 |
 | Doc comments on public classes | Pass (sampled; theme extensions documented above `@immutable`) |
 | `.env` ignored and untracked | Pass |
-| `.env.example` empty values | **Fail B-01** |
+| `.env.example` empty values | Pass (B-01 fixed) |
 | No legacy anon key / service-role key | Pass |
 | Deep-link config matches `AppConstants.authRedirectUrl` | Pass (ARCH tests for AndroidManifest and Info.plist; delivery MANUAL) |
