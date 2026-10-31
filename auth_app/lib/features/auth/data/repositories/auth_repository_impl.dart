@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:auth_app/core/error/failure.dart';
+import 'package:auth_app/core/error/invalid_link_failure.dart';
 import 'package:auth_app/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:auth_app/features/auth/data/models/auth_event_type.dart';
 import 'package:auth_app/features/auth/data/models/auth_state_event_model.dart';
@@ -16,8 +17,9 @@ import 'package:fpdart/fpdart.dart';
 /// [signInWithPassword] (for example the session created by tapping the
 /// confirmation link) is signed out locally, shown as `null` on
 /// [authStateChanges] and reported as `Right(unit)` on [emailLinkResults].
-/// Error events from the auth stream (invalid/expired link) become `Left` on
-/// [emailLinkResults].
+/// Error events from the auth stream that map to [InvalidLinkFailure]
+/// (invalid/expired link) become `Left` on [emailLinkResults]; all other
+/// stream errors are ignored.
 class AuthRepositoryImpl implements AuthRepository {
   /// Creates the repository.
   AuthRepositoryImpl(this._dataSource);
@@ -36,9 +38,14 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<_Processed?> _process(AuthStateEventModel event) async {
     switch (event.type) {
       case AuthEventType.error:
-        return _Processed.link(
-          left(AuthFailureMapper.fromException(event.error ?? Object())),
+        final failure = AuthFailureMapper.fromException(
+          event.error ?? Object(),
         );
+        // Only invalid/expired link errors are link results. Network, token
+        // refresh and other stream errors must not look like a bad link.
+        return failure is InvalidLinkFailure
+            ? _Processed.link(left(failure))
+            : null;
       case AuthEventType.signedIn:
         if (_expectingPasswordSignIn) {
           _expectingPasswordSignIn = false;

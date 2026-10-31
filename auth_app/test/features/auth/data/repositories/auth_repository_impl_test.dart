@@ -306,5 +306,54 @@ void main() {
         expect(links, hasLength(1));
       },
     );
+
+    // B-02: stream errors such as an offline token refresh must not become
+    // email-link results (they would route to the "Link expired" screen).
+    test(
+      'a network error on the auth stream is not an email-link result',
+      () async {
+        final links = <Either<Failure, Unit>>[];
+        repo.emailLinkResults.listen(links.add);
+        await Future<void>.delayed(Duration.zero);
+
+        events.add(
+          AuthStateEventModel.error(AuthRetryableFetchException(message: 'm')),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        expect(links, isEmpty);
+      },
+    );
+
+    test('an unknown stream error is not an email-link result', () async {
+      final links = <Either<Failure, Unit>>[];
+      repo.emailLinkResults.listen(links.add);
+      await Future<void>.delayed(Duration.zero);
+
+      events.add(AuthStateEventModel.error(StateError('boom')));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      expect(links, isEmpty);
+    });
+
+    test('a stream error does not block later link results', () async {
+      final links = <Either<Failure, Unit>>[];
+      repo.emailLinkResults.listen(links.add);
+      await Future<void>.delayed(Duration.zero);
+
+      events
+        ..add(
+          AuthStateEventModel.error(AuthRetryableFetchException(message: 'm')),
+        )
+        ..add(
+          const AuthStateEventModel.error(
+            AuthException('m', code: 'otp_expired'),
+          ),
+        );
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      expect(links, hasLength(1));
+      expect(links.single.isLeft(), isTrue);
+    });
   });
 }

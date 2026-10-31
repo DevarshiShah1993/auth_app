@@ -4,6 +4,11 @@ import 'package:auth_app/core/error/failure.dart';
 import 'package:auth_app/core/error/invalid_link_failure.dart';
 import 'package:auth_app/core/error/network_failure.dart';
 import 'package:auth_app/core/error/unknown_failure.dart';
+import 'package:auth_app/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:auth_app/features/auth/data/models/auth_event_type.dart';
+import 'package:auth_app/features/auth/data/models/auth_state_event_model.dart';
+import 'package:auth_app/features/auth/data/models/user_model.dart';
+import 'package:auth_app/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:auth_app/features/auth/domain/entities/app_user.dart';
 import 'package:auth_app/features/auth/domain/usecases/get_current_user.dart';
 import 'package:auth_app/features/auth/domain/usecases/observe_auth_state.dart';
@@ -15,6 +20,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MockGetCurrentUser extends Mock implements GetCurrentUser {}
 
@@ -24,6 +30,8 @@ class MockObserveEmailLinkResults extends Mock
     implements ObserveEmailLinkResults {}
 
 class MockSignOut extends Mock implements SignOut {}
+
+class MockDataSource extends Mock implements AuthRemoteDataSource {}
 
 void main() {
   const user = AppUser(id: '1', email: 'a@b.co', emailConfirmed: true);
@@ -229,5 +237,74 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     expect(calls, ['auth', 'link']);
     await bloc.close();
+  });
+
+  group('B-02 with the real repository', () {
+    const user = UserModel(id: '1', email: 'a@b.co', emailConfirmed: true);
+    late MockDataSource ds;
+    late StreamController<AuthStateEventModel> events;
+    late AuthSessionBloc bloc;
+
+    setUp(() {
+      ds = MockDataSource();
+      events = StreamController<AuthStateEventModel>.broadcast();
+      when(() => ds.authStateChanges).thenAnswer((_) => events.stream);
+      when(() => ds.currentUser).thenReturn(user);
+      when(() => ds.signOut()).thenAnswer((_) async {});
+      final repo = AuthRepositoryImpl(ds);
+      bloc = AuthSessionBloc(
+        getCurrentUser: GetCurrentUser(repo),
+        observeAuthState: ObserveAuthState(repo),
+        observeEmailLinkResults: ObserveEmailLinkResults(repo),
+        signOut: SignOut(repo),
+      );
+    });
+
+    tearDown(() async {
+      await bloc.close();
+      await events.close();
+    });
+
+    Future<void> settle() =>
+        Future<void>.delayed(const Duration(milliseconds: 10));
+
+    test(
+      'offline refresh failure then logout ends signed out, no link result',
+      () async {
+        bloc.add(const AuthSessionStarted());
+        await settle();
+        expect(bloc.state.isAuthenticated, isTrue);
+
+        events.add(
+          AuthStateEventModel.error(AuthRetryableFetchException(message: 'm')),
+        );
+        await settle();
+        expect(bloc.state.linkResult, isNull);
+
+        bloc.add(const AuthSessionLogoutRequested());
+        events.add(const AuthStateEventModel(type: AuthEventType.signedOut));
+        await settle();
+
+        expect(bloc.state.isAuthenticated, isFalse);
+        expect(bloc.state.linkResult, isNull);
+      },
+    );
+
+    test(
+      'an expired-link stream error still yields the invalid result',
+      () async {
+        bloc.add(const AuthSessionStarted());
+        await settle();
+
+        events.add(
+          const AuthStateEventModel.error(
+            AuthException('m', code: 'otp_expired'),
+          ),
+        );
+        await settle();
+
+        expect(bloc.state.linkResult, EmailLinkResult.invalid);
+      },
+    );
   });
 }
