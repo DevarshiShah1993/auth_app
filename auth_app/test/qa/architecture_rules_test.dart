@@ -160,7 +160,6 @@ void main() {
       expect((tracked.stdout as String).trim(), isEmpty);
     });
 
-    // BUG B-01: .env.example is committed with a real URL and key.
     test('.env.example has the two keys with empty values (AC-32)', () {
       final lines = File('.env.example')
           .readAsLinesSync()
@@ -173,7 +172,7 @@ void main() {
       for (final l in lines) {
         expect(l.substring(l.indexOf('=') + 1).trim(), isEmpty, reason: l);
       }
-    }, skip: 'B-01: .env.example contains real values');
+    });
   });
 
   group('deep link config (T-10)', () {
