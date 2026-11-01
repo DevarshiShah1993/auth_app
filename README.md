@@ -1,4 +1,4 @@
-# Bakery Auth — Flutter + Supabase Authentication Module
+# Flutter + Supabase Authentication Module withAi Agents
 
 A production-style authentication module for a Flutter app ("Bakery ERP"), built on **Supabase Auth** with **Clean Architecture**, and delivered through a **multi-agent software team**: a Product Manager, Business Analyst, Designer, Developer and QA, each an AI agent with its own role, file ownership and handoff rules.
 
