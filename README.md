@@ -1,3 +1,8 @@
+
+<img width="468" height="1013" alt="login" src="https://github.com/user-attachments/assets/570fd92d-5638-4983-90bb-7b77bb95c1a9" />
+
+<img width="468" height="1013" alt="signup" src="https://github.com/user-attachments/assets/b9256e60-8911-42d9-994a-a4e8b2f8ef69" />
+
 # Flutter + Supabase Authentication Module withAi Agents
 
 A production-style authentication module for a Flutter app ("Bakery ERP"), built on **Supabase Auth** with **Clean Architecture**, and delivered through a **multi-agent software team**: a Product Manager, Business Analyst, Designer, Developer and QA, each an AI agent with its own role, file ownership and handoff rules.
